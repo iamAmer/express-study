@@ -1,4 +1,5 @@
 import express from "express";
+import { parse } from "uuid";
 
 const app = express();
 
@@ -87,6 +88,75 @@ app.listen(PORT, () => {
     console.log(`Running on port ${PORT}`);
 })
 
+// put
+// update data, the entire resource, every single field in the request body
+app.put('/api/users/:id', (request, response) => {
+    console.log(request.params);
+
+    // should use parseInt because url parameters are string
+    const parsedId = parseInt(request.params.id);
+    const body = request.body;
+
+    if(isNaN(parsedId))
+        return response.status(400).send({msg: "Bad Request. Invalid ID!"});
+
+    const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+
+    if(findUserIndex === -1)
+        return response.status(404).send({msg: "User Not Found!"})
+
+    mockUsers[findUserIndex] = {
+        id: parsedId,
+        ...body
+    }
+
+    return response.status(200).send(mockUsers[findUserIndex]);
+})
+ 
+// patch
+// updates partially, not the user itself, only a part of a user record.
+// change username from amer to amir.
+app.patch('/api/users/:id', (request, response) => {
+    const parsedId = parseInt(request.params.id);
+    const body = request.body;
+
+    if(isNaN(parsedId))
+        return response.status(400).send({msg: "Bad Request. Invalid ID!"});
+
+    const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+
+    if(findUserIndex === -1)
+        return response.status(404).send({msg: "User Not Found!"})
+
+    mockUsers[findUserIndex] = { 
+        ...mockUsers[findUserIndex], 
+        ...body
+    };
+
+    return response.status(200).send(mockUsers[findUserIndex]);
+})
+
+// Delete
+app.delete('/api/users/:id', (request, response) => {
+    const { 
+        body,
+        params: { id }
+     } = request;
+
+    const parsedId = parseInt(id);
+    
+    if(isNaN(parsedId))
+        return response.status(400).send({msg: "Bad Request. Invalid ID!"});
+
+    const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+
+    if(findUserIndex === -1)
+        return response.status(404).send({msg: "User Not Found!"})
+
+    mockUsers.splice(findUserIndex, 1);
+
+    return response.status(200).send({ msg: `User with id: ${parsedId} deleted successfully!`});
+})
 
 // Routes
 // localhost:3000
