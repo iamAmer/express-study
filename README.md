@@ -7,3 +7,6 @@ Each folder covers a specific topic or concept, with examples and explanations.
 
 ## 📁 Structure
 [GET Routes and Query Params](/01-get-routes-query-params/)
+
+## Resources
+- https://www.youtube.com/watch?v=nH9E25nkk3I

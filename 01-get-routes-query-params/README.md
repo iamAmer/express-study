@@ -46,3 +46,9 @@ Important parts of res:
 | **res.set()**      | Sets headers                                   |
 | **res.redirect()** | Redirects the client to another URL            |
 | **res.end()**      | Ends the response (used for low-level control) |
+
+
+## Post Requests
+- Browser is limited to get requests.
+- When a http client makes a request, the server knows if it's a POST or get.
+- 201 (created) status code, a new resource was created as a result of POST request. 

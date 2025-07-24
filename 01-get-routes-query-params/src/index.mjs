@@ -1,6 +1,12 @@
 import express from "express";
 
 const app = express();
+
+// express is not parsing those requests body
+// we need to use middleware
+// middlewares is a function that invoked before a certain API request is handled
+app.use(express.json());
+
 const PORT = process.env.PORT || 3000;
 
 const mockUsers = [
@@ -14,15 +20,15 @@ const mockUsers = [
 ];
 
 // get is to read only data, not manipulating any data at all on the server side
-// sedond argument: request handler
-app.get('/', (request, responce) => {
-    responce.status(201).send('Hello Wrold');
+// second argument: request handler
+app.get('/', (request, response) => {
+    response.status(201).send('Hello World');
     
     // you can send also a json object
-    // responce.status(201).send({msg: 'Hello!'});
+    // response.status(201).send({msg: 'Hello!'});
 })
 
-app.get('/api/users', (request, responce) => {
+app.get('/api/users', (request, response) => {
     console.log(request.query);
 
     // the same as 
@@ -32,31 +38,46 @@ app.get('/api/users', (request, responce) => {
 
     // when filter and value are not defined
     if(filter && value)
-        return responce.send(
+        return response.send(
             mockUsers.filter((user) => user[filter].includes(value))
         )
-    return responce.send(mockUsers);
+    return response.send(mockUsers);
 });
 
 // route parameter
 // gives me only one user record based on the id
-app.get('/api/users/:id', (request, responce) => {
+app.get('/api/users/:id', (request, response) => {
     console.log(request.params);
     const parsedId = parseInt(request.params.id);
     if(isNaN(parsedId))
-        // bas request, due to the client error responce
+        // bas request, due to the client error response
         // malformed request syntax
-        return responce.status(400).send({msg: "Bad Request. Invalid ID!"});
+        return response.status(400).send({msg: "Bad Request. Invalid ID!"});
 
     const findUser = mockUsers.find((user) => user.id === parsedId )
     if(!findUser) 
-        return responce.status(404).send({msg: "User not Found!"});
+        return response.status(404).send({msg: "User not Found!"});
 
-    return responce.send(findUser);
+    return response.send(findUser);
 });
 
-app.get('/api/products', (request, responce) => {
-    responce.send([
+// post request
+app.post('/api/users', (request, response) => {
+    // console.log(request.body);
+
+    // destructure the request body
+    // ...body is to unpack all the body object into newUser object *
+    let { body } = request;
+    let newUser = { 
+        id: mockUsers.length + 1,
+        ...body
+    };
+    mockUsers.push(newUser);
+    return response.status(201).send(newUser); // 201 created 
+})
+
+app.get('/api/products', (request, response) => {
+    response.send([
         {id: 345, name: "phone"},
         {id: 346, name: "ipad"},
     ]);
