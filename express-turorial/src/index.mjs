@@ -8,6 +8,39 @@ const app = express();
 // middlewares is a function that invoked before a certain API request is handled
 app.use(express.json());
 
+// to use middleware => they set between the request and the final response
+// or for each specific end point
+const loggingMiddleWare = (request, response, next) => {
+    console.log(`${request.method} - ${request.url}`);
+    next();
+}
+
+const resolveIndexByUserId = (request, response, next) => {
+    const { 
+        body,
+        params: { id }
+     } = request;
+
+    // should use parseInt because url parameters are string
+    const parsedId = parseInt(id);
+    
+    if(isNaN(parsedId))
+        return response.status(400).send({msg: "Bad Request. Invalid ID!"});
+
+    const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
+
+    if(findUserIndex === -1)
+        return response.status(404).send({msg: "User Not Found!"})
+
+    request.findUserIndex = findUserIndex;
+    request.parsedId = parsedId;
+    next();
+}
+
+// you can enable it globally
+// should be registered before we use routes
+// app.use(loggingMiddleWare);
+
 const PORT = process.env.PORT || 3000;
 
 const mockUsers = [
@@ -22,7 +55,24 @@ const mockUsers = [
 
 // get is to read only data, not manipulating any data at all on the server side
 // second argument: request handler
-app.get('/', (request, response) => {
+
+// you can also pass the middleware as an argument to a specific function
+// check if the coming is missing a authorization token
+app.get('/',
+    (request, response, next) => {
+        console.log('Base Url 1');
+        // make sure to call the next function 
+        next();
+    },
+    (request, response, next) => {
+        console.log('Base Url 2');
+        next();
+    },
+    (request, response, next) => {
+        console.log('Base Url 3');
+        next();
+    },
+    (request, response) => {
     response.status(201).send('Hello World');
     
     // you can send also a json object
@@ -90,72 +140,42 @@ app.listen(PORT, () => {
 
 // put
 // update data, the entire resource, every single field in the request body
-app.put('/api/users/:id', (request, response) => {
+app.put('/api/users/:id', resolveIndexByUserId, (request, response) => {
     console.log(request.params);
 
-    // should use parseInt because url parameters are string
-    const parsedId = parseInt(request.params.id);
     const body = request.body;
+    const userIndex = request.findUserIndex;
 
-    if(isNaN(parsedId))
-        return response.status(400).send({msg: "Bad Request. Invalid ID!"});
-
-    const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
-
-    if(findUserIndex === -1)
-        return response.status(404).send({msg: "User Not Found!"})
-
-    mockUsers[findUserIndex] = {
-        id: parsedId,
+    mockUsers[userIndex] = {
+        id: request.parsedId,
         ...body
     }
 
-    return response.status(200).send(mockUsers[findUserIndex]);
+    return response.status(200).send(mockUsers[userIndex]);
 })
  
 // patch
 // updates partially, not the user itself, only a part of a user record.
 // change username from amer to amir.
-app.patch('/api/users/:id', (request, response) => {
-    const parsedId = parseInt(request.params.id);
+app.patch('/api/users/:id',resolveIndexByUserId, (request, response) => {
     const body = request.body;
+    const userIndex = request.findUserIndex;
 
-    if(isNaN(parsedId))
-        return response.status(400).send({msg: "Bad Request. Invalid ID!"});
-
-    const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
-
-    if(findUserIndex === -1)
-        return response.status(404).send({msg: "User Not Found!"})
-
-    mockUsers[findUserIndex] = { 
-        ...mockUsers[findUserIndex], 
+    mockUsers[userIndex] = { 
+        ...mockUsers[userIndex], 
         ...body
     };
 
-    return response.status(200).send(mockUsers[findUserIndex]);
+    return response.status(200).send(mockUsers[userIndex]);
 })
 
 // Delete
-app.delete('/api/users/:id', (request, response) => {
-    const { 
-        body,
-        params: { id }
-     } = request;
+app.delete('/api/users/:id', resolveIndexByUserId,(request, response) => {
+    const userIndex = request.findUserIndex;
 
-    const parsedId = parseInt(id);
-    
-    if(isNaN(parsedId))
-        return response.status(400).send({msg: "Bad Request. Invalid ID!"});
+    mockUsers.splice(userIndex, 1);
 
-    const findUserIndex = mockUsers.findIndex((user) => user.id === parsedId);
-
-    if(findUserIndex === -1)
-        return response.status(404).send({msg: "User Not Found!"})
-
-    mockUsers.splice(findUserIndex, 1);
-
-    return response.status(200).send({ msg: `User with id: ${parsedId} deleted successfully!`});
+    return response.status(200).send({ msg: `User deleted successfully!`});
 })
 
 // Routes
