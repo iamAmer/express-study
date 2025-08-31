@@ -1,6 +1,7 @@
 import express from "express";
-import { parse } from "uuid";
-
+// these functions you are importing, you are using them as middleware
+import { query, validationResult, body, matchedData, checkSchema } from "express-validator"
+import { createUserValidationSchema } from "./utils/validationSchemas.mjs";
 const app = express();
 
 // express is not parsing those requests body
@@ -10,10 +11,18 @@ app.use(express.json());
 
 // to use middleware => they set between the request and the final response
 // or for each specific end point
+
+// 1- Client sends a request
+// 2- Middlewares ex- logging, authentication or parsing
+// 3- ends the cycle by sending a request or pass control to next() middleware
 const loggingMiddleWare = (request, response, next) => {
     console.log(`${request.method} - ${request.url}`);
     next();
 }
+
+// Validation
+// Sometimes the data you expect is not the data you receive
+// Even if iam validating in the client side, we still need to validate on the server side 
 
 const resolveIndexByUserId = (request, response, next) => {
     const { 
@@ -79,9 +88,23 @@ app.get('/',
     // response.status(201).send({msg: 'Hello!'});
 })
 
-app.get('/api/users', (request, response) => {
-    console.log(request.query);
+app.get('/api/users',
+    // validate the field and attach the data to the request object
+    // query('filter')
+    // .isString()
+    // .notEmpty()
+    // // message for the previous validator
+    // .withMessage('Must not be empty')
+    // .isLength({min: 3, max: 10})
+    // .withMessage('Must be at least 3-10 characters'),
 
+    checkSchema(createUserValidationSchema),
+    
+    (request, response) => {
+    // console.log(request['express-validator#contexts']);
+    const result = validationResult(request);
+    console.log(result);
+    
     // the same as 
     // const filter = request.query.filter;
     // const value = request.query.value;
@@ -113,15 +136,27 @@ app.get('/api/users/:id', (request, response) => {
 });
 
 // post request
-app.post('/api/users', (request, response) => {
+app.post('/api/users', 
+    checkSchema(createUserValidationSchema),
+    (request, response) => {
     // console.log(request.body);
+
+    const result = validationResult(request);
+    console.log(result);
+
+    if (!result.isEmpty())
+        return response.status(400).send({errors: result["errors"]});
+
+    // all tha data that has been validated
+    const data = matchedData(request);
+    console.log(data);
 
     // destructure the request body
     // ...body is to unpack all the body object into newUser object *
     let { body } = request;
     let newUser = { 
-        id: mockUsers.length + 1,
-        ...body
+        id: mockUsers[mockUsers.length - 1].id + 1,
+        ...data
     };
     mockUsers.push(newUser);
     return response.status(201).send(newUser); // 201 created 
