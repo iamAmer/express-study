@@ -1,0 +1,6 @@
+- ESM VS CommonJS
+- res.send and res.json
+- Destructuring
+- filter
+- splice
+- status VS sendStatus
